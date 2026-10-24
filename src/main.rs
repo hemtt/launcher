@@ -70,9 +70,7 @@ fn notify_launcher_update() {
         return;
     };
     if latest > current {
-        eprintln!(
-            "A new HEMTT Launcher version is available: {latest} (you have {current})."
-        );
+        eprintln!("A new HEMTT Launcher version is available: {latest} (you have {current}).");
         if cfg!(target_os = "windows") {
             eprintln!("Use `winget upgrade hemtt` to update.");
         } else {
