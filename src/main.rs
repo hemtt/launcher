@@ -8,7 +8,7 @@ pub mod github;
 pub mod pr;
 pub mod versions;
 
-const UPDATE_CHECK_INTERVAL: Duration = Duration::from_secs(12 * 60 * 60);
+const UPDATE_CHECK_INTERVAL: Duration = Duration::from_hours(12);
 /// Marker file in the install directory, its modified time is the last successful check
 const UPDATE_CHECK_FILE: &str = "last-update-check";
 
@@ -19,7 +19,7 @@ fn main() -> anyhow::Result<()> {
         || args.first() == Some(&OsString::from("v"))
     {
         args = args[1..].to_vec();
-        vers(args)?;
+        vers(&args)?;
     } else {
         wrap(args)?;
     }
@@ -88,7 +88,7 @@ fn wrap(mut args: Vec<OsString>) -> anyhow::Result<()> {
             github::download_and_install(&latest)?;
             version = Some(latest.version.to_string());
         }
-        version.unwrap()
+        version.expect("Version should be set at this point")
     };
     let hemtt_path = if let Ok(semver_version) = semver::Version::parse(&version) {
         // check if the version is installed, if not download and install it
@@ -108,23 +108,23 @@ fn wrap(mut args: Vec<OsString>) -> anyhow::Result<()> {
         pr::download_pr_build(pr_number)?;
         versions::pr_dir(pr_number).join(EXECUTABLE)
     } else {
-        anyhow::bail!("Unknown version format: {}", version);
+        anyhow::bail!("Unknown version format: {version}");
     };
     // execute the hemtt binary with the specified version
     let status = std::process::Command::new(hemtt_path)
         .args(&args)
         .status()?;
     if !status.success() {
-        anyhow::bail!("HEMTT exited with status: {}", status);
+        anyhow::bail!("HEMTT exited with status: {status}");
     }
     Ok(())
 }
 
-fn vers(args: Vec<OsString>) -> anyhow::Result<()> {
+fn vers(args: &[OsString]) -> anyhow::Result<()> {
     match args.first() {
         Some(arg) if arg == "list" => {
             for version in versions::installed() {
-                println!("{}", version);
+                println!("{version}");
             }
         }
         Some(arg) if arg == "install" => {
@@ -142,7 +142,7 @@ fn vers(args: Vec<OsString>) -> anyhow::Result<()> {
                 match versions::remove(&version.to_string_lossy()) {
                     Ok(true) => println!("Version removed successfully."),
                     Ok(false) => println!("Version not found."),
-                    Err(err) => println!("Failed to remove version: {}", err),
+                    Err(err) => println!("Failed to remove version: {err}"),
                 }
             } else {
                 println!("Please specify a version to remove.");

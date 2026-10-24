@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{io::Write as _, time::Duration};
 
 use anyhow::{Context, Result, bail};
 use fs_err::File;
@@ -125,7 +125,7 @@ pub fn get_release(version: &Version) -> Result<ReleaseVersion> {
             return Ok(release);
         }
     }
-    bail!("Release not found for version {}", version);
+    bail!("Release not found for version {version}");
 }
 
 pub fn download_and_install(release: &ReleaseVersion) -> Result<()> {
@@ -148,7 +148,6 @@ pub fn download_and_install(release: &ReleaseVersion) -> Result<()> {
     {
         let mut output = File::create(&temp_zip)?;
         std::io::copy(&mut response, &mut output).context("Failed to download release archive")?;
-        use std::io::Write;
         output.flush()?;
         output.sync_all()?;
     }
@@ -162,14 +161,13 @@ pub fn download_and_install(release: &ReleaseVersion) -> Result<()> {
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i)?;
             let enclosed = match entry.enclosed_name() {
-                Some(p) => p.to_path_buf(),
+                Some(p) => p.clone(),
                 None => continue,
             };
             if enclosed.file_name().and_then(|n| n.to_str()) == Some(EXECUTABLE) {
                 let output_path = temp_dir.join(EXECUTABLE);
                 let mut output = File::create(&output_path)?;
                 std::io::copy(&mut entry, &mut output)?;
-                use std::io::Write;
                 output.flush()?;
                 output.sync_all()?;
                 found = true;

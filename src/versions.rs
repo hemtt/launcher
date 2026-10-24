@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use semver::Version;
 
+#[must_use]
 /// Folder where the versions are downloaded
 pub fn install_dir() -> PathBuf {
     let mut dir = dirs::data_local_dir().expect("Failed to get home directory");
@@ -11,12 +12,16 @@ pub fn install_dir() -> PathBuf {
     dir
 }
 
+#[must_use]
+/// Folder where a specific version is installed
 pub fn version_dir(version: &Version) -> PathBuf {
     let mut dir = install_dir();
     dir.push(version.to_string());
     dir
 }
 
+#[must_use]
+/// Folder where a specific PR build is installed
 pub fn pr_dir(pr_number: u64) -> PathBuf {
     let mut dir = install_dir();
     dir.push("pr");
@@ -24,6 +29,8 @@ pub fn pr_dir(pr_number: u64) -> PathBuf {
     dir
 }
 
+#[must_use]
+/// List of installed versions
 pub fn installed() -> Vec<Version> {
     let mut versions = Vec::new();
     if let Ok(entries) = fs_err::read_dir(install_dir()) {

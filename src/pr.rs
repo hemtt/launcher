@@ -53,8 +53,7 @@ pub fn can_download() -> Result<bool> {
 
     match status {
         Ok(status) if status.status.success() => Ok(true),
-        Ok(_) => Ok(false),
-        Err(_) => Ok(false),
+        _ => Ok(false),
     }
 }
 
@@ -186,10 +185,10 @@ pub fn download_pr_build(pr_number: u64) -> Result<PathBuf> {
 
         let _ = fs_err::remove_dir_all(&temp_dir);
 
-        let details = if !stderr.trim().is_empty() {
-            stderr.trim()
-        } else {
+        let details = if stderr.trim().is_empty() {
             stdout.trim()
+        } else {
+            stderr.trim()
         };
 
         bail!(
@@ -199,15 +198,9 @@ pub fn download_pr_build(pr_number: u64) -> Result<PathBuf> {
         );
     }
 
-    let downloaded_exe = match find_executable(&temp_dir)? {
-        Some(path) => path,
-        None => {
-            let _ = fs_err::remove_dir_all(&temp_dir);
-            bail!(
-                "PR artifact `{CI_ARTIFACT}` did not contain the expected executable \
-                 `{EXECUTABLE}`"
-            );
-        }
+    let Some(downloaded_exe) = find_executable(&temp_dir)? else {
+        let _ = fs_err::remove_dir_all(&temp_dir);
+        bail!("PR artifact `{CI_ARTIFACT}` did not contain the expected executable `{EXECUTABLE}`");
     };
 
     // Normalize the executable location so the installed path is predictable.
