@@ -21,19 +21,18 @@ jobs:
       release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - name: Compare version
         id: version
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
         shell: bash
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
-          previous=$(git tag --list 'v*' --sort=-v:refname | head -n 1 | sed 's/^v//')
+          previous=$(gh release view --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//') || true
           release=false
           if [ "$EVENT" = "push" ] && [ "$version" != "$previous" ]; then
-            if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            if gh release view "v$version" >/dev/null 2>&1; then
               echo "v$version already exists, skipping release"
             else
               release=true
@@ -132,7 +131,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --verify-tag \
+            --target "$GITHUB_SHA" \
             --title "HEMTT Launcher $TAG" \
             --notes "Built from $GITHUB_REPOSITORY@$GITHUB_SHA" \
             release/linux-x64.zip \
