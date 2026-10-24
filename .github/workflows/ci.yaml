@@ -120,15 +120,19 @@ jobs:
           (cd darwin-arm64 && zip ../darwin-arm64.zip hemtt)
 
       - name: Create release
-        uses: actions/create-release@v1
-        with:
-          tag_name: "v${{ needs.check.outputs.version }}"
-          release_name: "HEMTT Launcher v${{ needs.check.outputs.version }}"
-          body: "Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
-          draft: false
-          prerelease: false
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.check.outputs.version }}
+        run: |
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "HEMTT Launcher $TAG" \
+            --notes "Built from $GITHUB_REPOSITORY@$GITHUB_SHA" \
+            release/linux-x64.zip \
+            release/windows-x64.zip \
+            release/darwin-arm64.zip
 
   winget:
     needs:
