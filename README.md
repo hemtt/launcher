@@ -21,7 +21,7 @@ curl -sSf https://hemtt.dev/install.sh | sh
 List all installed HEMTT versions:
 
 ```bash
-hemtt version list
+hemtt versions list
 ```
 
 Install the latest HEMTT release:
@@ -39,7 +39,7 @@ hemtt update
 Remove a specific HEMTT version:
 
 ```bash
-hemtt version remove <version>
+hemtt versions remove <version>
 ```
 
 Run a specific HEMTT version:

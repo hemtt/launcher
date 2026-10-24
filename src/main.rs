@@ -74,7 +74,7 @@ fn notify_launcher_update() {
         if cfg!(target_os = "windows") {
             eprintln!("Use `winget upgrade hemtt` to update.");
         } else {
-            eprintln!("Use `https://hemtt.dev/install.sh` to update.");
+            eprintln!("Download it from {LAUNCHER_RELEASES_URL}");
         }
     }
 }
