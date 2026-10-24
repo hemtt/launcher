@@ -21,21 +21,15 @@ jobs:
       release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - name: Compare version
         id: version
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
         shell: bash
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
-          previous=""
-          if [ "$EVENT" = "push" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            previous=$(git show "$BEFORE:Cargo.toml" 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -n 1) || true
-          fi
+          previous=$(gh release view --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//') || true
           release=false
           if [ "$EVENT" = "push" ] && [ "$version" != "$previous" ]; then
             if gh release view "v$version" >/dev/null 2>&1; then
