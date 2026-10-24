@@ -24,6 +24,18 @@ List all installed HEMTT versions:
 hemtt version list
 ```
 
+Install the latest HEMTT release:
+
+```bash
+hemtt versions install latest
+```
+
+Update to the latest HEMTT release (the newest installed version is used by default):
+
+```bash
+hemtt update
+```
+
 Remove a specific HEMTT version:
 
 ```bash
@@ -41,3 +53,5 @@ Test a HEMTT PR:
 ```bash
 hemtt +pr/<pr-number> build
 ```
+
+Every HEMTT process started by the launcher has `HEMTT_FROM_LAUNCHER=1` set in its environment.

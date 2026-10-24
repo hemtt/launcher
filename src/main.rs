@@ -20,10 +20,18 @@ fn main() -> anyhow::Result<()> {
     {
         args = args[1..].to_vec();
         vers(&args)?;
+    } else if args.first() == Some(&OsString::from("update")) {
+        install_latest()?;
     } else {
         wrap(args)?;
     }
     Ok(())
+}
+
+/// Download and install the latest stable release
+fn install_latest() -> anyhow::Result<()> {
+    let latest = github::latest_release()?;
+    github::download_and_install(&latest)
 }
 
 /// Install the latest release if it is newer than the highest installed version.
@@ -113,6 +121,7 @@ fn wrap(mut args: Vec<OsString>) -> anyhow::Result<()> {
     // execute the hemtt binary with the specified version
     let status = std::process::Command::new(hemtt_path)
         .args(&args)
+        .env("HEMTT_FROM_LAUNCHER", "1")
         .status()?;
     if !status.success() {
         anyhow::bail!("HEMTT exited with status: {status}");
@@ -127,16 +136,15 @@ fn vers(args: &[OsString]) -> anyhow::Result<()> {
                 println!("{version}");
             }
         }
-        Some(arg) if arg == "install" => {
-            if let Some(version) = args.get(1) {
+        Some(arg) if arg == "install" => match args.get(1) {
+            Some(version) if version == "latest" => install_latest()?,
+            Some(version) => {
                 let version =
                     github::get_release(&semver::Version::parse(&version.to_string_lossy())?)?;
                 github::download_and_install(&version)?;
-            } else {
-                let latest = github::latest_release()?;
-                github::download_and_install(&latest)?;
             }
-        }
+            None => install_latest()?,
+        },
         Some(arg) if arg == "remove" => {
             if let Some(version) = args.get(1) {
                 match versions::remove(&version.to_string_lossy()) {
