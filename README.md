@@ -55,3 +55,5 @@ hemtt +pr/<pr-number> build
 ```
 
 Every HEMTT process started by the launcher has `HEMTT_FROM_LAUNCHER=1` set in its environment.
+
+The launcher checks for a newer HEMTT Launcher release every 12 hours and prints a notice when one is available. It never replaces itself, so download new launcher versions from the [releases page](https://github.com/hemtt/launcher/releases).

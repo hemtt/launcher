@@ -10,6 +10,7 @@ use zip::ZipArchive;
 use crate::versions::{install_dir, version_dir};
 
 pub const REPO: &str = "BrettMayson/hemtt";
+pub const LAUNCHER_REPO: &str = "hemtt/launcher";
 pub const API: &str = "https://api.github.com";
 
 #[cfg(target_os = "windows")]
@@ -36,6 +37,11 @@ struct Release {
     draft: bool,
     prerelease: bool,
     assets: Vec<Asset>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TagRelease {
+    tag_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -116,6 +122,20 @@ pub fn latest_release() -> Result<ReleaseVersion> {
             "The latest stable GitHub release did not contain the expected `{ASSET}` asset."
         )
     })
+}
+
+/// Latest stable release version of the launcher itself
+pub fn latest_launcher_version() -> Result<Version> {
+    let release: TagRelease = client()?
+        .get(format!("{API}/repos/{LAUNCHER_REPO}/releases/latest"))
+        .send()?
+        .error_for_status()?
+        .json()?;
+    let version_text = release
+        .tag_name
+        .strip_prefix('v')
+        .unwrap_or(&release.tag_name);
+    Ok(Version::parse(version_text)?)
 }
 
 pub fn get_release(version: &Version) -> Result<ReleaseVersion> {
