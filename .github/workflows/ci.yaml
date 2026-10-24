@@ -21,18 +21,19 @@ jobs:
       release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Compare version
         id: version
         env:
-          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
         shell: bash
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
-          previous=$(gh release view --json tagName --jq '.tagName' 2>/dev/null | sed 's/^v//') || true
+          previous=$(git tag --list 'v*' --sort=-v:refname | head -n 1 | sed 's/^v//')
           release=false
           if [ "$EVENT" = "push" ] && [ "$version" != "$previous" ]; then
-            if gh release view "v$version" >/dev/null 2>&1; then
+            if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
               echo "v$version already exists, skipping release"
             else
               release=true
@@ -113,6 +114,16 @@ jobs:
           (cd windows-x64 && zip ../windows-x64.zip hemtt.exe)
           (cd darwin-arm64 && zip ../darwin-arm64.zip hemtt)
 
+      - name: Create tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.check.outputs.version }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$GITHUB_SHA"
+
       - name: Create release
         shell: bash
         env:
@@ -121,7 +132,7 @@ jobs:
         run: |
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --verify-tag \
             --title "HEMTT Launcher $TAG" \
             --notes "Built from $GITHUB_REPOSITORY@$GITHUB_SHA" \
             release/linux-x64.zip \
@@ -130,6 +141,7 @@ jobs:
 
   winget:
     needs:
+    - check
     - release
     runs-on: windows-latest
     steps:
@@ -140,4 +152,5 @@ jobs:
         identifier: BrettMayson.HEMTT
         installers-regex: 'windows-x64.zip'
         release-repository: hemtt/launcher
+        release-tag: v${{ needs.check.outputs.version }}
         token: ${{ secrets.WINGET_TOKEN }} # Classic Personal Access Token with [public_repo, workflow] scopes
