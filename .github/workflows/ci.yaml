@@ -120,10 +120,26 @@ jobs:
           (cd darwin-arm64 && zip ../darwin-arm64.zip hemtt)
 
       - name: Create release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ needs.check.outputs.version }}"
+          release_name: "HEMTT Launcher v${{ needs.check.outputs.version }}"
+          body: "Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+          draft: false
+          prerelease: false
         env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.check.outputs.version }}
-        run: |
-          gh release create "v$VERSION" release/*.zip \
-            --title "HEMTT Launcher v$VERSION" \
-            --notes "Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  winget:
+    needs:
+    - release
+    runs-on: windows-latest
+    steps:
+    # Requires forked winget-pkgs: https://github.com/microsoft/winget-pkgs to the same account as this project
+    - name: Submit to WinGet
+      uses: vedantmgoyal9/winget-releaser@v2
+      with:
+        identifier: BrettMayson.HEMTT
+        installers-regex: 'windows-x64.zip'
+        release-repository: hemtt/launcher
+        token: ${{ secrets.WINGET_TOKEN }} # Classic Personal Access Token with [public_repo, workflow] scopes
